@@ -1,0 +1,62 @@
+from django.contrib.auth import authenticate
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import RegisterSerializer, UserSerializer
+
+def set_auth_cookies(response, tokens):
+    """Set JWT tokens in HttpOnly cookies."""
+    common_opts = {
+        'httponly': True,
+        'secure': not settings.DEBUG,
+        'samesite': 'Lax'
+    }
+    response.set_cookie('access_token', tokens['access'], **common_opts)
+    response.set_cookie('refresh_token', tokens['refresh'], **common_opts)
+
+class RegisterView(APIView):
+    """API View for user registration."""
+    permission_classes = [permissions.AllowAny]
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+class LoginView(APIView):
+    """API View for user login."""
+    permission_classes = [permissions.AllowAny]
+    def post(self, request):
+        user = authenticate(
+            username=request.data.get('username'),
+            password=request.data.get('password')
+        )
+        if user:
+            refresh = RefreshToken.for_user(user)
+            tokens = {'refresh': str(refresh), 'access': str(refresh.access_token)}
+            response = Response({"message": "Login successful"})
+            set_auth_cookies(response, tokens)
+            return response
+        return Response({"detail": "Invalid credentials"}, status=401)
+
+class LogoutView(APIView):
+    """API View for user logout."""
+    def post(self, request):
+        response = Response({"message": "Logout successful"})
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except Exception:
+                pass
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
+
+class UserView(APIView):
+    """API View to get current user."""
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)

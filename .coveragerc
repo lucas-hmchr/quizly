@@ -1,0 +1,19 @@
+[run]
+omit =
+    manage.py
+    core/asgi.py
+    core/wsgi.py
+    core/settings.py
+    */migrations/*
+    */tests.py
+    */admin.py
+    */apps.py
+    */views.py
+    auth_app/api/authentication.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __str__
+    if __name__ == .__main__.:

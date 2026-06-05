@@ -1,0 +1,13 @@
+Django==6.0.5
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+yt-dlp
+openai-whisper
+google-generativeai
+ffmpeg-python
+python-dotenv
+requests
+Pillow
+pytest-django
+coverage
