@@ -1,34 +1,24 @@
 from rest_framework import serializers
-from ..models import Quiz, Question, Answer, UserQuizProgress, UserAnswer
-
-class AnswerSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Answer model.
-    """
-    class Meta:
-        model = Answer
-        fields = ["id", "text", "is_correct"]
+from ..models import Quiz, Question, UserQuizProgress, UserAnswer
 
 class QuestionSerializer(serializers.ModelSerializer):
     """
-    Serializer for the Question model. Includes answers.
+    Serializer for the Question model.
     """
-    answers = AnswerSerializer(many=True, read_only=True)
-
     class Meta:
         model = Question
-        fields = ["id", "text", "answers"]
+        fields = ["id", "question_title", "question_options", "answer", "created_at", "updated_at"]
 
 class QuizSerializer(serializers.ModelSerializer):
     """
     Serializer for the Quiz model.
     """
-    questions_count = serializers.IntegerField(source='questions.count', read_only=True)
+    questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Quiz
-        fields = ["id", "title", "description", "youtube_url", "created_at", "questions_count"]
-        read_only_fields = ["id", "created_at", "youtube_url"]
+        fields = ["id", "title", "description", "created_at", "updated_at", "video_url", "questions"]
+        read_only_fields = ["id", "created_at", "updated_at", "video_url"]
 
 class QuizDetailSerializer(serializers.ModelSerializer):
     """
@@ -38,8 +28,8 @@ class QuizDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Quiz
-        fields = ["id", "title", "description", "youtube_url", "transcript", "created_at", "questions"]
-        read_only_fields = ["id", "created_at", "youtube_url", "transcript"]
+        fields = ["id", "title", "description", "created_at", "updated_at", "video_url", "questions"]
+        read_only_fields = ["id", "created_at", "updated_at", "video_url"]
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     """
@@ -50,9 +40,9 @@ class UserAnswerSerializer(serializers.ModelSerializer):
         fields = ["id", "question", "selected_answer"]
 
     def validate(self, attrs):
-        # Ensure the answer belongs to the question
-        if attrs['selected_answer'].question != attrs['question']:
-            raise serializers.ValidationError("Answer does not belong to the question.")
+        # Ensure the answer is one of the options
+        if attrs['selected_answer'] not in attrs['question'].question_options:
+            raise serializers.ValidationError("Invalid answer option.")
         return attrs
 
 class QuizResultSerializer(serializers.Serializer):

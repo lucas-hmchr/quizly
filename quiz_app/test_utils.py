@@ -3,7 +3,7 @@ import os
 from unittest.mock import patch, MagicMock
 from django.conf import settings
 from quiz_app.utils import download_youtube_audio, transcribe_audio, generate_quiz_from_transcript, create_quiz_in_db
-from quiz_app.models import Quiz, Question, Answer
+from quiz_app.models import Quiz, Question
 from django.contrib.auth.models import User
 
 @pytest.mark.django_db
@@ -31,12 +31,12 @@ class TestQuizUtils:
         text = transcribe_audio("dummy_path")
         assert text == "Hello world"
 
-    @patch('google.generativeai.GenerativeModel.generate_content')
-    @patch('google.generativeai.configure')
-    def test_generate_quiz_from_transcript(self, mock_config, mock_gen):
+    @patch('quiz_app.utils.genai.Client')
+    def test_generate_quiz_from_transcript(self, mock_client_class):
+        mock_client = mock_client_class.return_value
         mock_response = MagicMock()
         mock_response.text = '{"title": "AI Quiz", "description": "AI Desc", "questions": []}'
-        mock_gen.return_value = mock_response
+        mock_client.models.generate_content.return_value = mock_response
         
         data = generate_quiz_from_transcript("Some transcript")
         assert data['title'] == "AI Quiz"
@@ -55,5 +55,7 @@ class TestQuizUtils:
         quiz = create_quiz_in_db(self.user, "https://url.com", quiz_data, "transcript")
         assert Quiz.objects.count() == 1
         assert Question.objects.count() == 1
-        assert Answer.objects.count() == 1
+        question = Question.objects.first()
+        assert "A1" in question.question_options
+        assert question.answer == "A1"
         assert quiz.title == "DB Quiz"

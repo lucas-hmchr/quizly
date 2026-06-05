@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import Quiz, Question, Answer, UserAnswer
+from .models import Quiz, Question, UserAnswer
 
 @pytest.mark.django_db
 class TestQuiz:
@@ -15,10 +15,14 @@ class TestQuiz:
         self.quiz = Quiz.objects.create(
             user=self.user,
             title="Test Quiz",
-            youtube_url="https://youtube.com/watch?v=123"
+            video_url="https://youtube.com/watch?v=123"
         )
-        self.question = Question.objects.create(quiz=self.quiz, text="What is Python?")
-        self.answer = Answer.objects.create(question=self.question, text="A language", is_correct=True)
+        self.question = Question.objects.create(
+            quiz=self.quiz, 
+            question_title="What is Python?",
+            question_options=["A language", "A snake", "Both"],
+            answer="Both"
+        )
 
     def test_list_quizzes(self):
         url = reverse('quiz-list')
@@ -59,14 +63,14 @@ class TestQuiz:
         url = reverse('quiz-answer', kwargs={'quiz_id': self.quiz.id})
         data = {
             "question": self.question.id,
-            "selected_answer": self.answer.id
+            "selected_answer": "Both"
         }
         response = self.client.post(url, data)
         assert response.status_code == status.HTTP_200_OK
         assert UserAnswer.objects.filter(user=self.user, question=self.question).exists()
 
     def test_get_result(self):
-        UserAnswer.objects.create(user=self.user, question=self.question, selected_answer=self.answer)
+        UserAnswer.objects.create(user=self.user, question=self.question, selected_answer="Both")
         url = reverse('quiz-result', kwargs={'quiz_id': self.quiz.id})
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK

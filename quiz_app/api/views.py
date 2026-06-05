@@ -59,13 +59,12 @@ class QuizAnswerView(APIView):
 def get_question_result(question, user_answers):
     """Calculate result for a single question."""
     user_ans = user_answers.filter(question=question).first()
-    selected_id = user_ans.selected_answer.id if user_ans else None
-    correct_ans = question.answers.filter(is_correct=True).first()
-    correct_id = correct_ans.id if correct_ans else None
-    is_correct = (selected_id == correct_id) if selected_id else False
+    selected_answer = user_ans.selected_answer if user_ans else None
+    correct_answer = question.answer
+    is_correct = (selected_answer == correct_answer) if selected_answer else False
     return {
-        "question_id": question.id, "question_text": question.text,
-        "selected_answer_id": selected_id, "correct_answer_id": correct_id,
+        "question_id": question.id, "question_text": question.question_title,
+        "selected_answer": selected_answer, "correct_answer": correct_answer,
         "is_correct": is_correct
     }
 

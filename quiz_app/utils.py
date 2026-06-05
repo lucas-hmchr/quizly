@@ -1,11 +1,13 @@
 import os
 import json
 import shutil
+import time
 import yt_dlp
 import whisper
-import google.generativeai as genai
+from google import genai
+from google.genai import errors
 from django.conf import settings
-from .models import Quiz, Question, Answer
+from .models import Quiz, Question
 
 def get_ydl_opts(output_path):
     """Return yt_dlp options."""
@@ -35,6 +37,7 @@ def transcribe_audio(file_path):
     """Transcribe audio using Whisper."""
     model = whisper.load_model("base")
     result = model.transcribe(file_path)
+    print(result["text"])
     return result["text"]
 
 def get_quiz_prompt(transcript):
@@ -66,31 +69,80 @@ def clean_json_response(text):
     return content
 
 def generate_quiz_from_transcript(transcript):
-    """Generate quiz using Gemini Flash."""
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    """Generate quiz using Gemini with fallback and retries."""
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
     prompt = get_quiz_prompt(transcript)
-    response = model.generate_content(prompt)
-    json_text = clean_json_response(response.text)
-    return json.loads(json_text)
+    
+    # Models to try in order of preference
+    # We include several versions to handle varying quota and availability
+    models = [
+        'gemini-2.0-flash', 
+        'gemini-3-flash-preview', 
+        'gemini-flash-latest', 
+        'gemini-3.1-flash-lite',
+        'gemini-flash-lite-latest'
+    ]
+    
+    last_error = None
+    for model_id in models:
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model=model_id,
+                    contents=prompt
+                )
+                json_text = clean_json_response(response.text)
+                return json.loads(json_text)
+            except (errors.APIError, errors.ClientError, errors.ServerError) as e:
+                last_error = e
+                # Attempt to extract status code
+                status_code = getattr(e, 'code', None)
+                err_msg = str(e).lower()
+                
+                if status_code is None:
+                    if "429" in err_msg: status_code = 429
+                    elif "503" in err_msg: status_code = 503
+                    elif "500" in err_msg: status_code = 500
 
-def save_answers(question, answers_data):
-    """Save answers for a question."""
-    for a_data in answers_data:
-        Answer.objects.create(
-            question=question,
-            text=a_data.get('text'),
-            is_correct=a_data.get('is_correct', False)
-        )
+                # If limit is 0, don't bother retrying this model
+                if status_code == 429 and "limit: 0" in err_msg:
+                    print(f"Model {model_id} has 0 quota. Trying next model...")
+                    break
+
+                # 429 = Resource Exhausted, 503 = Service Unavailable, 500 = Internal Error
+                if status_code in [429, 503, 500] or "quota" in err_msg:
+                    if attempt < max_retries - 1:
+                        wait_time = (2 ** attempt) + 2
+                        print(f"Retrying {model_id} (attempt {attempt + 1}/{max_retries}) in {wait_time}s due to error: {e}")
+                        time.sleep(wait_time)
+                        continue
+                
+                print(f"Model {model_id} failed: {e}. Trying next model if available...")
+                break 
+            except Exception as e:
+                last_error = e
+                print(f"Unexpected error with {model_id}: {last_error}")
+                break
+                
+    if last_error:
+        raise last_error
+    raise RuntimeError("Failed to generate quiz from transcript after trying all available models.")
 
 def create_quiz_in_db(user, url, data, transcript):
     """Save quiz to DB."""
     quiz = Quiz.objects.create(
-        user=user, youtube_url=url, transcript=transcript,
+        user=user, video_url=url, transcript=transcript,
         title=data.get('title', 'Generated Quiz'),
         description=data.get('description', '')
     )
     for q_data in data.get('questions', []):
-        question = Question.objects.create(quiz=quiz, text=q_data.get('text'))
-        save_answers(question, q_data.get('answers', []))
+        options = [a.get('text') for a in q_data.get('answers', [])]
+        correct_answer = next((a.get('text') for a in q_data.get('answers', []) if a.get('is_correct')), None)
+        Question.objects.create(
+            quiz=quiz, 
+            question_title=q_data.get('text'),
+            question_options=options,
+            answer=correct_answer
+        )
     return quiz

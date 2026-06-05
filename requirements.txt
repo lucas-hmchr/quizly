@@ -4,7 +4,7 @@ djangorestframework-simplejwt
 django-cors-headers
 yt-dlp
 openai-whisper
-google-generativeai
+google-genai
 ffmpeg-python
 python-dotenv
 requests
