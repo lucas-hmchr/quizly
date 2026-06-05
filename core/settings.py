@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     # Local apps
     'auth_app',
     'quiz_app',
-    'legal_app',
 ]
 
 MIDDLEWARE = [
