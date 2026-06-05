@@ -10,7 +10,7 @@ Quizly is a Django-based REST API that generates interactive quizzes from YouTub
     - Transcribes audio using OpenAI Whisper.
     - Generates 10 questions with 4 options each using Google Gemini Flash AI.
 - **Quiz Management**: Create, view, update, and delete quizzes.
-- **Quiz Gameplay**: Track progress and calculate results.
+- **Quiz Gameplay**: Questions include correct answers for frontend-side result calculation.
 - **Resource Oriented**: Clean RESTful API structure.
 
 ## Prerequisites
@@ -62,11 +62,9 @@ Quizly is a Django-based REST API that generates interactive quizzes from YouTub
 ### Quizzes
 - `GET /api/quizzes/`: List user's quizzes (supports `?period=today` or `?period=week`).
 - `POST /api/quizzes/`: Generate a quiz from a YouTube URL (send `{"url": "..."}`).
-- `GET /api/quizzes/<id>/`: Get quiz details (with questions).
+- `GET /api/quizzes/<id>/`: Get quiz details (includes questions with correct answers).
 - `PATCH /api/quizzes/<id>/`: Update quiz title/description.
 - `DELETE /api/quizzes/<id>/`: Delete a quiz.
-- `POST /api/quizzes/<id>/answer/`: Submit an answer for a question.
-- `GET /api/quizzes/<id>/result/`: Get quiz results.
 
 ## Testing
 

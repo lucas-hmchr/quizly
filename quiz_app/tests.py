@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import Quiz, Question, UserAnswer
+from .models import Quiz, Question
 
 @pytest.mark.django_db
 class TestQuiz:
@@ -59,20 +59,3 @@ class TestQuiz:
         assert response.status_code == status.HTTP_201_CREATED
         assert Quiz.objects.filter(title="New Quiz").exists()
 
-    def test_submit_answer(self):
-        url = reverse('quiz-answer', kwargs={'quiz_id': self.quiz.id})
-        data = {
-            "question": self.question.id,
-            "selected_answer": "Both"
-        }
-        response = self.client.post(url, data)
-        assert response.status_code == status.HTTP_200_OK
-        assert UserAnswer.objects.filter(user=self.user, question=self.question).exists()
-
-    def test_get_result(self):
-        UserAnswer.objects.create(user=self.user, question=self.question, selected_answer="Both")
-        url = reverse('quiz-result', kwargs={'quiz_id': self.quiz.id})
-        response = self.client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['correct_answers'] == 1
-        assert response.data['score_percentage'] == 100.0

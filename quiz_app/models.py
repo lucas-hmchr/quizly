@@ -35,25 +35,3 @@ class Question(models.Model):
     def __str__(self):
         return f"{self.quiz.title} - {self.question_title[:50]}"
 
-class UserQuizProgress(models.Model):
-    """
-    Model to track user progress on a quiz.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_progress")
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    is_completed = models.BooleanField(default=False)
-    completed_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        unique_together = ("user", "quiz")
-
-class UserAnswer(models.Model):
-    """
-    Model to store user's selected answer for a question.
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_answer = models.CharField(max_length=255, default="")
-
-    class Meta:
-        unique_together = ("user", "question")
