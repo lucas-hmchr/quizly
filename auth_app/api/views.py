@@ -3,8 +3,9 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer
 
 def set_auth_cookies(response, tokens):
     """Set JWT tokens in HttpOnly cookies."""
@@ -39,13 +40,13 @@ class LoginView(APIView):
             tokens = {'refresh': str(refresh), 'access': str(refresh.access_token)}
             response = Response({"message": "Login successful"})
             set_auth_cookies(response, tokens)
-            return response
+            return Response({"detail": "Login successfully!","user": {"id": user.id, "username": user.username, "email": user.email}}, status=200)
         return Response({"detail": "Invalid credentials"}, status=401)
 
 class LogoutView(APIView):
     """API View for user logout."""
     def post(self, request):
-        response = Response({"message": "Logout successful"})
+        response = Response({"message": "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."})
         refresh_token = request.COOKIES.get('refresh_token')
         if refresh_token:
             try:
@@ -55,8 +56,3 @@ class LogoutView(APIView):
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
-
-class UserView(APIView):
-    """API View to get current user."""
-    def get(self, request):
-        return Response(UserSerializer(request.user).data)

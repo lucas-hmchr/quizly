@@ -18,7 +18,7 @@ class TestAuth:
             "username": "testuser",
             "email": "test@example.com",
             "password": "testpassword123",
-            "password_confirm": "testpassword123"
+            "confirmed_password": "testpassword123"
         }
         response = self.client.post(self.register_url, data)
         assert response.status_code == status.HTTP_201_CREATED
@@ -29,7 +29,7 @@ class TestAuth:
             "username": "testuser2",
             "email": "test2@example.com",
             "password": "testpassword123",
-            "password_confirm": "wrongpassword"
+            "confirmed_password": "wrongpassword"
         }
         response = self.client.post(self.register_url, data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
