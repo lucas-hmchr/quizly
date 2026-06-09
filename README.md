@@ -15,7 +15,7 @@ Quizly is a Django-based REST API that generates interactive quizzes from YouTub
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - **FFMPEG**: Must be installed globally on your system.
 - Gemini API Key: Required for quiz generation.
 
@@ -36,9 +36,13 @@ Quizly is a Django-based REST API that generates interactive quizzes from YouTub
    - Add your `GEMINI_API_KEY`.
 5. Run migrations:
    ```bash
+   python manage.py makemigrations
+   ```
+6. Run migrations:
+   ```bash
    python manage.py migrate
    ```
-6. Start the development server:
+7. Start the development server:
    ```bash
    python manage.py runserver
    ```
@@ -57,7 +61,6 @@ Quizly is a Django-based REST API that generates interactive quizzes from YouTub
 - `POST /api/register/`: Register a new user.
 - `POST /api/login/`: Login and receive tokens in cookies.
 - `POST /api/logout/`: Logout and clear cookies.
-- `GET /api/user/`: Get current user info.
 
 ### Quizzes
 - `GET /api/quizzes/`: List user's quizzes (supports `?period=today` or `?period=week`).
