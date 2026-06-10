@@ -34,4 +34,4 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password']
         )
-        return {"detail": "User created successfully."}
+        return user
