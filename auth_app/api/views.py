@@ -1,14 +1,14 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, UserSerializer
 
 def set_auth_cookies(response, tokens):
-    """Set JWT tokens in HttpOnly cookies."""
     common_opts = {
         'httponly': True,
         'secure': not settings.DEBUG,
@@ -18,7 +18,6 @@ def set_auth_cookies(response, tokens):
     response.set_cookie('refresh_token', tokens['refresh'], **common_opts)
 
 class RegisterView(APIView):
-    """API View for user registration."""
     permission_classes = [permissions.AllowAny]
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -28,7 +27,6 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=400)
 
 class LoginView(APIView):
-    """API View for user login."""
     permission_classes = [permissions.AllowAny]
     def post(self, request):
         user = authenticate(
@@ -38,10 +36,18 @@ class LoginView(APIView):
         if user:
             refresh = RefreshToken.for_user(user)
             tokens = {'refresh': str(refresh), 'access': str(refresh.access_token)}
-            response = Response({"message": "Login successful"})
+            response = Response(
+                {"detail": "Login successfully!", "user": {"id": user.id, "username": user.username, "email": user.email}},
+                status=200
+            )
             set_auth_cookies(response, tokens)
-            return Response({"detail": "Login successfully!","user": {"id": user.id, "username": user.username, "email": user.email}}, status=200)
+            return response
         return Response({"detail": "Invalid credentials"}, status=401)
+
+class UserView(APIView):
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
 
 class LogoutView(APIView):
     """API View for user logout."""
