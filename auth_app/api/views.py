@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, UserSerializer
 
 def set_auth_cookies(response, tokens):
+    """Set JWT tokens in HttpOnly cookies."""
     common_opts = {
         'httponly': True,
         'secure': not settings.DEBUG,
@@ -18,6 +19,7 @@ def set_auth_cookies(response, tokens):
     response.set_cookie('refresh_token', tokens['refresh'], **common_opts)
 
 class RegisterView(APIView):
+    """API View for user registration."""
     permission_classes = [permissions.AllowAny]
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -27,6 +29,7 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=400)
 
 class LoginView(APIView):
+    """API View for user login."""
     permission_classes = [permissions.AllowAny]
     def post(self, request):
         user = authenticate(
