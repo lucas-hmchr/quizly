@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import RegisterSerializer, UserSerializer
 
 def set_auth_cookies(response, tokens):
@@ -65,4 +65,27 @@ class LogoutView(APIView):
                 pass
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
+        return response
+
+class CookieTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh = request.COOKIES.get('refresh_token')
+        if refresh is None :
+            return Response({"detail": "Refresh token is missing."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data={"refresh": refresh})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except:
+            return Response({"detail": "Refresh token invalid!"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        access_token = serializer.validated_data.get("access")
+        response = Response({"message": "access token refreshed successfully."})
+        response.set_cookie(
+            key='access_token',
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite='Lax'
+        )
         return response
