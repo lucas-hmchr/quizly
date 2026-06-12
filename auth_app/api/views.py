@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import RegisterSerializer, UserSerializer
 
 def set_auth_cookies(response, tokens):
@@ -28,10 +29,10 @@ class RegisterView(APIView):
             return Response({"detail": "User created successfully!"}, status=201)
         return Response(serializer.errors, status=400)
 
-class LoginView(APIView):
+class LoginView(TokenObtainPairView):
     """API View for user login."""
     permission_classes = [permissions.AllowAny]
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         user = authenticate(
             username=request.data.get('username'),
             password=request.data.get('password')
