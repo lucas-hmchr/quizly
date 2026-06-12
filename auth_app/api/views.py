@@ -13,7 +13,7 @@ def set_auth_cookies(response, tokens):
     """Set JWT tokens in HttpOnly cookies."""
     common_opts = {
         'httponly': True,
-        'secure': not settings.DEBUG,
+        'secure': True,
         'samesite': 'Lax'
     }
     response.set_cookie('access_token', tokens['access'], **common_opts)
